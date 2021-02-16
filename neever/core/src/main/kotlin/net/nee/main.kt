@@ -25,7 +25,7 @@ fun main() {
 		}*/
 
 		events.before { event: Event<Packet<*>> ->
-			println("Packet transaction")
+//			println("Packet transaction")
 		}
 
 	}
