@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":neever"))
     implementation(project(":shared"))
     api(project(":units"))
+    api(project(":neever:nbt"))
 
     // Server
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
@@ -58,6 +59,7 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 tasks.test {
@@ -78,6 +80,8 @@ tasks.withType<KotlinCompile> {
     }
 }
 
+// Deprecated
+/*
 application {
     mainClassName = "ServerKt"
-}
+}*/

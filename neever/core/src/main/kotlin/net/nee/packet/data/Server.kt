@@ -1,22 +1,24 @@
 package net.nee.packet.data
 
+import io.ktor.utils.io.core.*
+import io.ktor.utils.io.streams.outputStream
 import net.nee.connection.Connection
 import net.nee.connection.writeString
 import net.nee.connection.writeVarInt
+import net.nee.entity.EntityId
 import net.nee.entity.GameMode
 import net.nee.events.packet.Send
-import io.ktor.utils.io.core.*
-import io.ktor.utils.io.streams.outputStream
-import org.jglrxavpok.hephaistos.nbt.NBTCompound
-import org.jglrxavpok.hephaistos.nbt.NBTWriter
 import net.nee.packet.Packet
+import net.nee.packets.server.playing.spawn.Painting
+import net.nee.units.Direction
 import net.nee.units.VarInt
 import net.nee.units.View
 import net.nee.units.ViewDistance
 import net.nee.units.coordinates.location.chunk.ChunkLocation2D
 import net.nee.units.coordinates.position.Position3D
+import org.jglrxavpok.hephaistos.nbt.NBTCompound
+import org.jglrxavpok.hephaistos.nbt.NBTWriter
 import java.util.*
-import kotlin.experimental.or
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.declaredMemberProperties
@@ -88,7 +90,7 @@ abstract class Server<D : Server<D>>(
 				writeDouble(it.y)
 				writeDouble(it.z)
 			},
-			/*Writer<Location> {
+			/*Writer<Location2D> {
 
 			},*/
 			WriterFull<View> { it, type, unit ->
@@ -133,13 +135,21 @@ abstract class Server<D : Server<D>>(
 
 				when (unit) {
 					typeOf<VarInt>() -> write(VarInt(value))
-					typeOf<Int>() -> write(value)
-					else -> write(value.toByte())
+					typeOf<Int>()    -> write(value)
+					else             -> write(value.toByte())
 				}
 			},
 			Writer<Float> {
 				writeFloat(it)
-			}
+			},
+			WriterFull<EntityId> { it, _, unit ->
+				when (unit) {
+					typeOf<Int>() -> write(it)
+					else          -> write(VarInt(it))
+				}
+			},
+			Writer<Painting.Motive> { write(VarInt(it.id)) },
+			Writer<Direction> { writeByte(it.id.toByte()) }
 		)
 
 		@Suppress("UNCHECKED_CAST") // type = typeOf<T>()
