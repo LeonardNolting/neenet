@@ -15,6 +15,7 @@
             <option value="$PROJECT_DIR$/neever/core" />
             <option value="$PROJECT_DIR$/neever/discord" />
             <option value="$PROJECT_DIR$/neever/gui" />
+            <option value="$PROJECT_DIR$/neever/nbt" />
             <option value="$PROJECT_DIR$/neever/web" />
             <option value="$PROJECT_DIR$/shared" />
             <option value="$PROJECT_DIR$/units" />

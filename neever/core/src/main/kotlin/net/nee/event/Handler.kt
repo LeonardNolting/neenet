@@ -196,13 +196,11 @@ class Handler<D : Data<RN>, RN> private constructor(
 		@JvmName("invokeDefault")
 		operator fun invoke() = Handler(Data::class).apply {
 			kClasses.forEach { createHierarchy(it) }
-			println("Added handler")
 			Companion.handlers += this
 		}
 
 		fun register(kClass: KClass<out Data<*>>) {
 			kClasses += kClass
-			println(handlers)
 			handlers.forEach { it.createHierarchy(kClass) }
 		}
 

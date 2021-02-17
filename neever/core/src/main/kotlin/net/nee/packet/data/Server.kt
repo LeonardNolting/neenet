@@ -1,19 +1,23 @@
 package net.nee.packet.data
 
+import io.ktor.utils.io.core.*
+import io.ktor.utils.io.streams.outputStream
 import net.nee.connection.Connection
 import net.nee.connection.writeString
 import net.nee.connection.writeVarInt
+import net.nee.entity.EntityId
 import net.nee.entity.GameMode
 import net.nee.events.packet.Send
-import io.ktor.utils.io.core.*
-import io.ktor.utils.io.streams.outputStream
-import org.jglrxavpok.hephaistos.nbt.NBTCompound
-import org.jglrxavpok.hephaistos.nbt.NBTWriter
 import net.nee.packet.Packet
+import net.nee.packets.server.playing.spawn.Painting
+import net.nee.units.Direction
 import net.nee.units.VarInt
 import net.nee.units.View
 import net.nee.units.ViewDistance
+import net.nee.units.coordinates.location.chunk.ChunkLocation2D
 import net.nee.units.coordinates.position.Position3D
+import org.jglrxavpok.hephaistos.nbt.NBTCompound
+import org.jglrxavpok.hephaistos.nbt.NBTWriter
 import java.util.*
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
@@ -86,7 +90,7 @@ abstract class Server<D : Server<D>>(
 				writeDouble(it.y)
 				writeDouble(it.z)
 			},
-			/*Writer<Location> {
+			/*Writer<Location2D> {
 
 			},*/
 			WriterFull<View> { it, type, unit ->
@@ -104,7 +108,48 @@ abstract class Server<D : Server<D>>(
 			WriterFull<ViewDistance> { it, _, unit ->
 				if (unit == typeOf<VarInt>()) writeVarInt(it.toInt())
 				else writeByte(it.toByte())
-			}
+			},
+			WriterFull<ChunkLocation2D> { it, _, unit ->
+				if (unit == typeOf<VarInt>()) {
+					writeVarInt(it.x)
+					writeVarInt(it.z)
+				} else {
+					writeInt(it.x)
+					writeInt(it.z)
+				}
+			},
+			WriterFull<BitField> { it, type, unit ->
+				val kClass = it::class
+				val value = kClass.primaryConstructor!!.valueParameters.map { parameter ->
+					// Order
+					kClass.declaredMemberProperties.find { it.name == parameter.name }?.to(parameter)
+						?: error("Parameter ${parameter.name} of server packet $kClass is not a field. Server packet constructor parameters must all be fields.") // TODO error message
+				}.withIndex().fold(0) { acc, (index, pair) ->
+					val (field) = pair
+					@Suppress("UNCHECKED_CAST")
+					val value = (field as KProperty1<BitField, *>).get(it)
+					check(value is Boolean)
+					if (value) acc or (1 shl index)
+					else acc
+				}
+
+				when (unit) {
+					typeOf<VarInt>() -> write(VarInt(value))
+					typeOf<Int>()    -> write(value)
+					else             -> write(value.toByte())
+				}
+			},
+			Writer<Float> {
+				writeFloat(it)
+			},
+			WriterFull<EntityId> { it, _, unit ->
+				when (unit) {
+					typeOf<Int>() -> write(it)
+					else          -> write(VarInt(it))
+				}
+			},
+			Writer<Painting.Motive> { write(VarInt(it.id)) },
+			Writer<Direction> { writeByte(it.id.toByte()) }
 		)
 
 		@Suppress("UNCHECKED_CAST") // type = typeOf<T>()
@@ -114,11 +159,11 @@ abstract class Server<D : Server<D>>(
 
 		private inline fun <reified T> find() = find<T>(typeOf<T>())
 
-		protected fun <T> BytePacketBuilder.write(value: T, type: KType, unit: KType? = null) =
+		fun <T> BytePacketBuilder.write(value: T, type: KType, unit: KType? = null) =
 			find<T>(type).write(this, value, type, unit)
 
 		@JvmStatic
-		protected inline fun <reified T : Any?> BytePacketBuilder.write(value: T, unit: KType?) =
+		inline fun <reified T : Any?> BytePacketBuilder.write(value: T, unit: KType? = null) =
 			write(value, typeOf<T>(), unit)
 	}
 
@@ -126,7 +171,7 @@ abstract class Server<D : Server<D>>(
 		constructor.valueParameters.map { parameter ->
 			// Order
 			kClass.declaredMemberProperties.find { it.name == parameter.name }?.to(parameter)
-				?: error("Parameter ${parameter.name} of server packet $kClass is not a field. net.nee.Server packet constructor parameters must all be fields.")
+				?: error("Parameter ${parameter.name} of server packet $kClass is not a field. Server packet constructor parameters must all be fields.")
 		}.forEach { (field, parameter) ->
 			@Suppress("UNCHECKED_CAST")
 			packet.write(

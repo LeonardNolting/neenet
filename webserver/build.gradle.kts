@@ -22,6 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:1.4.0")
     implementation("io.ktor:ktor-html-builder:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 tasks.test {
@@ -32,6 +33,8 @@ tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "13"
 }
 
+// Deprecated
+/*
 application {
     mainClassName = "ServerKt"
-}
+}*/

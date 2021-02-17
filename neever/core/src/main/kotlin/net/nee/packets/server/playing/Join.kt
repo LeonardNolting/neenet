@@ -13,6 +13,7 @@ import net.nee.units.Angle
 import net.nee.units.View
 import net.nee.units.ViewDistance
 import net.nee.units.coordinates.location.Location3D
+import net.nee.units.coordinates.location.chunk.ChunkLocation2D
 
 data class Join(
 	val eid: Int = 0,
@@ -31,8 +32,29 @@ data class Join(
 	val isDebug: Boolean = false,
 	val isFlat: Boolean = false,
 ) : Server<Join>(0x24) {
-	override suspend fun afterSend(connection: Connection, packet: Packet<Join>) {
-		connection.send(PositionView(Location3D(0, 100, 0).toPosition3D(), View(Angle(0), Angle(0))))
+	override suspend fun afterSend(connection: Connection, packet: Packet<Join>) = connection.run {
+		send(PlayerAbilities(PlayerAbilities.Flags(
+			invulnerable = true,
+			flying = true,
+			allowFlying = true,
+			creativeMode = true
+		), 0.05f, 0.1f))
+
+		for (x in -3..3)
+			for (z in -3..3)
+				send(
+					Chunk.New(
+						ChunkLocation2D(x, z),
+						VarInt(0),
+						NBTCompound().apply {
+							setLongArray("MOTION_BLOCKING", LongArray(37))
+						},
+						List(1024) { VarInt(1) },
+						ByteArray(0),
+						listOf()
+					)
+				)
+		send(PositionView(Location3D(0, 100, 0).toPosition3D(), View(Angle(0), Angle(0))))
 	}
 
 	companion object {
