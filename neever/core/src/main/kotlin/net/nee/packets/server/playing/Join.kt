@@ -1,22 +1,28 @@
 package net.nee.packets.server.playing
 
+import info.kunalsheth.units.generated.Kilogram
 import net.nee.connection.Connection
-import net.nee.units.VarInt
+import net.nee.entities.ball.Football
+import net.nee.entity.EntityId
 import net.nee.entity.GameMode
+import net.nee.packet.Packet
 import net.nee.packet.data.Server
+import net.nee.packet.data.Unit
+import net.nee.units.Angle
+import net.nee.units.VarInt
+import net.nee.units.View
+import net.nee.units.ViewDistance
+import net.nee.units.coordinates.location.chunk.ChunkLocation2D
+import net.nee.units.coordinates.position.Position3D
+import net.nee.units.coordinates.vector.Vector3D
+import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTList
 import org.jglrxavpok.hephaistos.nbt.NBTTypes
-import net.nee.packet.Packet
-import net.nee.packet.data.Unit
-import net.nee.units.Angle
-import net.nee.units.View
-import net.nee.units.ViewDistance
-import net.nee.units.coordinates.location.Location3D
-import net.nee.units.coordinates.location.chunk.ChunkLocation2D
+import java.util.*
 
 data class Join(
-	val eid: Int = 0,
+	val eid: EntityId = 0,
 	val isHardcore: Boolean = false,
 	val gameMode: GameMode = GameMode.CREATIVE,
 	val previousGameMode: GameMode = GameMode.NONE,
@@ -25,7 +31,7 @@ data class Join(
 	val dimension: NBTCompound = defaultDimension,
 	val worldName: String = defaultWorldName,
 	val hashedSeed: Long = 0L,
-	val maxPlayers: VarInt = VarInt(0),
+	val maxPlayers: VarInt = 0.toVarInt(),
 	@Unit(VarInt::class) val viewDistance: ViewDistance = ViewDistance(16),
 	val reducedDebugInfo: Boolean = false,
 	val enableRespawnScreen: Boolean = false,
@@ -33,38 +39,77 @@ data class Join(
 	val isFlat: Boolean = false,
 ) : Server<Join>(0x24) {
 	override suspend fun afterSend(connection: Connection, packet: Packet<Join>) = connection.run {
-		send(PlayerAbilities(PlayerAbilities.Flags(
-			invulnerable = true,
-			flying = true,
-			allowFlying = true,
-			creativeMode = true
-		), 0.05f, 0.1f))
+		send(
+			PlayerAbilities(
+				PlayerAbilities.Flags(
+					invulnerable = true,
+					flying = true,
+					allowFlying = true,
+					creativeMode = true
+				), 0.05f, 0.1f
+			)
+		)
 
 		for (x in -3..3)
 			for (z in -3..3)
 				send(
 					Chunk.New(
 						ChunkLocation2D(x, z),
-						VarInt(0),
+						0.toVarInt(),
 						NBTCompound().apply {
 							setLongArray("MOTION_BLOCKING", LongArray(37))
 						},
-						List(1024) { VarInt(1) },
+						List(1024) { 1.toVarInt() },
 						ByteArray(0),
 						listOf()
 					)
 				)
-		send(PositionView(Location3D(0, 100, 0).toPosition3D(), View(Angle(0), Angle(0))))
+
+		send(PositionView(Position3D(0, 100, 0), View(Angle(0), Angle(0))))
+
+		repeat(1) {
+			Football(
+				eid = 1 + it,
+				UUID.randomUUID(),
+				0.5.Kilogram,
+				Position3D(0, 100, 2),
+				View(Angle(0), Angle(0)),
+				Vector3D(0.0, 0.0, 0.0),
+				itemId = 428
+			).spawn(connection)
+			/*send(
+				net.nee.packets.server.playing.spawn.Object(
+					eid = 1 + it,
+					UUID.randomUUID(),
+					1.toVarInt(),
+					Position3D(0, 100, 2),
+					View(Angle(0), Angle(0)),
+					data = 1,
+					Vector3D(0.0, 0.0, 0.0)
+				)
+			)
+
+			send(
+				EntityEquipment(
+					eid = 1 + it, listOf(
+						EntityEquipment.Entry(
+							EntityEquipment.Slot.HELMET,
+							EntityEquipment.Entry.Item.Filled(428.toVarInt(), 1)
+						)
+					)
+				)
+			)*/
+		}
 	}
 
 	companion object {
-		val defaultWorldName = "minecraft:overworld"
+		val defaultWorldName = "neever:football"
 		val defaultDimensionCodec = NBTCompound().apply {
 			set("minecraft:dimension_type", NBTCompound().apply {
 				setString("type", "minecraft:dimension_type")
 				set("value", NBTList<NBTCompound>(NBTTypes.TAG_Compound).apply {
 					add(NBTCompound().apply {
-						setString("name", "minecraft:overworld")
+						setString("name", "neever:football")
 						setInt("id", 0)
 						set("element", NBTCompound().apply {
 							setByte("piglin_safe", 0)
@@ -74,7 +119,7 @@ data class Join(
 							setByte("respawn_anchor_works", 0)
 							setByte("has_skylight", 1)
 							setByte("bed_works", 1)
-							setString("effects", "minecraft:overworld")
+							setString("effects", "neever:football")
 							setByte("has_raids", 1)
 							setInt("logical_height", 256)
 							setDouble("coordinate_scale", 1.0)
@@ -139,7 +184,7 @@ data class Join(
 			})
 		}
 		val defaultDimension = NBTCompound().apply {
-			setString("name", "minecraft:overworld")
+			setString("name", "neever:football")
 			setByte("piglin_safe", 0)
 			setByte("natural", 1)
 			setFloat("ambient_light", 0f)
@@ -147,7 +192,7 @@ data class Join(
 			setByte("respawn_anchor_works", 0)
 			setByte("has_skylight", 1)
 			setByte("bed_works", 1)
-			setString("effects", "minecraft:overworld")
+			setString("effects", "neever:football")
 			setByte("has_raids", 1)
 			setInt("logical_height", 256)
 			setDouble("coordinate_scale", 1.0)
@@ -158,14 +203,14 @@ data class Join(
 
 	/*companion object {
 //		val defaultWorldName = net.nee.Server.name.toLowerCase() + ":world"
-		val defaultWorldName = "minecraft:overworld"
+		val defaultWorldName = "neever:football"
 		val defaultDimensionCodec = """
 			{
 			    "minecraft:dimension_type": {
 			        "type": "minecraft:dimension_type",
 			        "value": [
 			            {
-			                "name": "minecraft:overworld",
+			                "name": "neever:football",
 			                "id": 0,
 			                "element": {
 			                    "piglin_safe": 0b,
@@ -175,7 +220,7 @@ data class Join(
 			                    "respawn_anchor_works": 0b,
 			                    "has_skylight": 1b,
 			                    "bed_works": 1b,
-			                    "effects": "minecraft:overworld",
+			                    "effects": "neever:football",
 			                    "has_raids": 1b,
 			                    "logical_height": 256,
 			                    "coordinate_scale": 1.0d,
@@ -222,7 +267,7 @@ data class Join(
 			        type: "minecraft:dimension_type",
 			        value: [
 			            {
-			                name: "minecraft:overworld",
+			                name: "neever:football",
 			                id: 0,
 			                element: {
 			                    piglin_safe: 0b,
@@ -232,7 +277,7 @@ data class Join(
 			                    respawn_anchor_works: 0b,
 			                    has_skylight: 1b,
 			                    bed_works: 1b,
-			                    effects: "minecraft:overworld",
+			                    effects: "neever:football",
 			                    has_raids: 1b,
 			                    logical_height: 256,
 			                    coordinate_scale: 1.0d,
@@ -241,7 +286,7 @@ data class Join(
 			                }
 			            },
 			            {
-			                name: "minecraft:overworld_caves",
+			                name: "neever:football_caves",
 			                id: 1,
 			                element: {
 			                    piglin_safe: 0b,
@@ -251,7 +296,7 @@ data class Join(
 			                    respawn_anchor_works: 0b,
 			                    has_skylight: 1b,
 			                    bed_works: 1b,
-			                    effects: "minecraft:overworld",
+			                    effects: "neever:football",
 			                    has_raids: 1b,
 			                    logical_height: 256,
 			                    coordinate_scale: 1.0d,
@@ -375,7 +420,7 @@ data class Join(
 		""".trimIndent().replace(Regex("\\s"), "")*//*
 		val defaultDimension = """
 			{
-			    "name": "minecraft:overworld",
+			    "name": "neever:football",
 			    "piglin_safe": 0b,
 			    "natural": 1b,
 			    "ambient_light": 0.0f,
@@ -383,7 +428,7 @@ data class Join(
 			    "respawn_anchor_works": 0b,
 			    "has_skylight": 1b,
 			    "bed_works": 1b,
-			    "effects": "minecraft:overworld",
+			    "effects": "neever:football",
 			    "has_raids": 1b,
 			    "logical_height": 256,
 			    "coordinate_scale": 1.0d,

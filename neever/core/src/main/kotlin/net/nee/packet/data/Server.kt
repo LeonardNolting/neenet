@@ -5,10 +5,10 @@ import io.ktor.utils.io.streams.outputStream
 import net.nee.connection.Connection
 import net.nee.connection.writeString
 import net.nee.connection.writeVarInt
-import net.nee.entity.EntityId
 import net.nee.entity.GameMode
 import net.nee.events.packet.Send
 import net.nee.packet.Packet
+import net.nee.packets.server.playing.EntityEquipment
 import net.nee.packets.server.playing.spawn.Painting
 import net.nee.units.Direction
 import net.nee.units.VarInt
@@ -16,15 +16,17 @@ import net.nee.units.View
 import net.nee.units.ViewDistance
 import net.nee.units.coordinates.location.chunk.ChunkLocation2D
 import net.nee.units.coordinates.position.Position3D
+import net.nee.units.coordinates.vector.Vector3D
+import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTWriter
 import java.util.*
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
-import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.isSubtypeOf
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.valueParameters
 import kotlin.reflect.typeOf
@@ -77,6 +79,21 @@ abstract class Server<D : Server<D>>(
 			Writer<Boolean> {
 				writeByte(if (it) 0x01 else 0x00)
 			},
+			Writer<EntityEquipment.Entry.Item> {
+				write(it.present)
+				if (it is EntityEquipment.Entry.Item.Filled) {
+					write(it.id)
+					write(it.amount)
+					if (it.nbt == null) writeByte(0)
+					else write(it.nbt)
+				}
+			},
+			Writer<List<EntityEquipment.Entry>> { entries ->
+				entries.withIndex().forEach { (index, entry) ->
+					writeByte(entry.slot.toByte(following = index + 1 != entries.size))
+					write(entry.item)
+				}
+			},
 			WriterFull<List<*>> { list, type, _ ->
 				writeVarInt(list.size)
 				val argument = type.arguments.single().type!!
@@ -122,7 +139,7 @@ abstract class Server<D : Server<D>>(
 				val kClass = it::class
 				val value = kClass.primaryConstructor!!.valueParameters.map { parameter ->
 					// Order
-					kClass.declaredMemberProperties.find { it.name == parameter.name }?.to(parameter)
+					kClass.memberProperties.find { it.name == parameter.name }?.to(parameter)
 						?: error("Parameter ${parameter.name} of server packet $kClass is not a field. Server packet constructor parameters must all be fields.") // TODO error message
 				}.withIndex().fold(0) { acc, (index, pair) ->
 					val (field) = pair
@@ -142,14 +159,22 @@ abstract class Server<D : Server<D>>(
 			Writer<Float> {
 				writeFloat(it)
 			},
-			WriterFull<EntityId> { it, _, unit ->
-				when (unit) {
-					typeOf<Int>() -> write(it)
-					else          -> write(VarInt(it))
-				}
-			},
 			Writer<Painting.Motive> { write(VarInt(it.id)) },
-			Writer<Direction> { writeByte(it.id.toByte()) }
+			Writer<Direction> { writeByte(it.id.toByte()) },
+			WriterFull<Vector3D> { it, _, unit ->
+				when (unit) {
+					typeOf<Short>() -> {
+						write(it.x.toInt().toShort())
+						write(it.y.toInt().toShort())
+						write(it.z.toInt().toShort())
+					}
+					else            -> {
+						write(it.x)
+						write(it.y)
+						write(it.z)
+					}
+				}
+			}
 		)
 
 		@Suppress("UNCHECKED_CAST") // type = typeOf<T>()
@@ -168,17 +193,21 @@ abstract class Server<D : Server<D>>(
 	}
 
 	private fun prepareReflectively(packet: BytePacketBuilder) {
-		constructor.valueParameters.map { parameter ->
-			// Order
-			kClass.declaredMemberProperties.find { it.name == parameter.name }?.to(parameter)
+		val parameters = constructor.valueParameters
+		val fields = kClass.memberProperties
+
+		// Zip parameters and fields
+		parameters.map { parameter ->
+			val field = fields.find { it.name == parameter.name }
 				?: error("Parameter ${parameter.name} of server packet $kClass is not a field. Server packet constructor parameters must all be fields.")
+
+			field to parameter
 		}.forEach { (field, parameter) ->
 			@Suppress("UNCHECKED_CAST")
-			packet.write(
-				(field as KProperty1<Server<D>, *>).get(this@Server),
-				field.returnType,
-				parameter.findAnnotation<Unit>()?.toKType()
-			)
+			val value = (field as KProperty1<Server<D>, *>).get(this@Server)
+			val type = field.returnType
+			val unit = (parameter.findAnnotation<Unit>() ?: field.findAnnotation())?.toKType()
+			packet.write(value, type, unit)
 		}
 	}
 
@@ -195,7 +224,7 @@ abstract class Server<D : Server<D>>(
 		packet: Packet<D>,
 	) {
 		val content = buildPacket { prepare() }
-		val idVarInt = VarInt(id).toByteArray()
+		val idVarInt = id.toVarInt().toByteArray()
 		val length = content.remaining.toInt() + idVarInt.size
 
 		connection.run {

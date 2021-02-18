@@ -1,8 +1,5 @@
 package net.nee
 
-import net.nee.connection.Connection
-import net.nee.event.Event
-import net.nee.events.packet.Packet
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.features.json.GsonSerializer
@@ -16,20 +13,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KLogger
 import mu.KotlinLogging
+import net.nee.connection.Connection
 import net.nee.connection.types.Play
+import net.nee.event.Event
 import net.nee.event.Handler
+import net.nee.events.packet.Packet
 import net.nee.packet.data.Client
 import net.nee.packet.data.Server
 import org.reflections8.Reflections
 import java.net.InetSocketAddress
-import kotlin.reflect.KClass
-import kotlin.reflect.full.companionObjectInstance
-
 import java.security.KeyPair
-
 import java.security.KeyPairGenerator
 import java.util.*
 import kotlin.concurrent.schedule
+import kotlin.reflect.KClass
+import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.typeOf
 
@@ -86,7 +84,7 @@ object Server {
 				val isServer = event.data.packet.d.isSubtypeOf(typeOf<Server<*>>())
 				"${if (isServer) "OUT" else "IN "} ${
 					event.data.packet.d.toString()
-						.removePrefix("packets.")
+						.removePrefix("net.nee.packets.")
 						.removePrefix("server.")
 						.removePrefix("client.")
 				}: ${event.data.packet}".cutOverflow(100u)
