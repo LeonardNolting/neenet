@@ -1,7 +1,5 @@
 package net.nee.connection
 
-import net.nee.Server
-import net.nee.units.VarInt
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.core.Input
@@ -11,6 +9,9 @@ import io.ktor.utils.io.core.writeFully
 import io.ktor.utils.io.core.writeText
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeStringUtf8
+import net.nee.Server
+import net.nee.units.VarInt
+import net.nee.units.toVarInt
 import java.security.Key
 import javax.crypto.Cipher
 import kotlin.experimental.and
@@ -28,7 +29,7 @@ suspend fun readVarInt(readByte: suspend () -> Byte): VarInt {
 		require(numRead++ <= 5) { "net.nee.units.VarInt can't be longer than 5 bytes." }
 	} while ((read and 0b10000000.toByte()) != 0.toByte())
 
-	return VarInt(result)
+	return result.toVarInt()
 }
 
 suspend fun ByteReadChannel.readVarInt() = readVarInt(::readByte)

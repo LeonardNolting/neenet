@@ -1,16 +1,7 @@
 package net.nee
 
-import net.nee.NBT.readNamedNBTCompound
-import net.nee.NBT.toSNBT
-import net.nee.NBT.writeNBT
-import net.nee.NBT.writeNamedNBTCompound
 import net.nee.event.Event
 import net.nee.events.packet.Packet
-import java.io.ByteArrayOutputStream
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.File
-import java.io.FileInputStream
 
 fun main() {
 	neever {
@@ -38,7 +29,7 @@ fun main() {
 		}
 
 		// TEST NBT
-		val outputStream = ByteArrayOutputStream()
+		/*val outputStream = ByteArrayOutputStream()
 		val output = DataOutputStream(outputStream)
 		val nbt = listOf(
 			mapOf(
@@ -77,7 +68,6 @@ fun main() {
 			)
 		val newFile = File("C:\\Users\\Tommi\\AppData\\Roaming\\.minecraft\\servers.dat")
 		DataOutputStream(newFile.outputStream()).writeNamedNBTCompound("", nbt3)
-		println(nbt3.toSNBT())
-
+		println(nbt3.toSNBT())*/
 	}
 }

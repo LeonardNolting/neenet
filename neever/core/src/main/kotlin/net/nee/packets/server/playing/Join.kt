@@ -1,22 +1,26 @@
 package net.nee.packets.server.playing
 
 import net.nee.connection.Connection
-import net.nee.units.VarInt
+import net.nee.entity.EntityId
 import net.nee.entity.GameMode
+import net.nee.packet.Packet
 import net.nee.packet.data.Server
+import net.nee.packet.data.Unit
+import net.nee.units.Angle
+import net.nee.units.VarInt
+import net.nee.units.View
+import net.nee.units.ViewDistance
+import net.nee.units.coordinates.location.chunk.ChunkLocation2D
+import net.nee.units.coordinates.position.Position3D
+import net.nee.units.coordinates.vector.Vector3D
+import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTList
 import org.jglrxavpok.hephaistos.nbt.NBTTypes
-import net.nee.packet.Packet
-import net.nee.packet.data.Unit
-import net.nee.units.Angle
-import net.nee.units.View
-import net.nee.units.ViewDistance
-import net.nee.units.coordinates.location.Location3D
-import net.nee.units.coordinates.location.chunk.ChunkLocation2D
+import java.util.*
 
 data class Join(
-	val eid: Int = 0,
+	val eid: EntityId = 0,
 	val isHardcore: Boolean = false,
 	val gameMode: GameMode = GameMode.CREATIVE,
 	val previousGameMode: GameMode = GameMode.NONE,
@@ -25,7 +29,7 @@ data class Join(
 	val dimension: NBTCompound = defaultDimension,
 	val worldName: String = defaultWorldName,
 	val hashedSeed: Long = 0L,
-	val maxPlayers: VarInt = VarInt(0),
+	val maxPlayers: VarInt = 0.toVarInt(),
 	@Unit(VarInt::class) val viewDistance: ViewDistance = ViewDistance(16),
 	val reducedDebugInfo: Boolean = false,
 	val enableRespawnScreen: Boolean = false,
@@ -45,16 +49,40 @@ data class Join(
 				send(
 					Chunk.New(
 						ChunkLocation2D(x, z),
-						VarInt(0),
+						0.toVarInt(),
 						NBTCompound().apply {
 							setLongArray("MOTION_BLOCKING", LongArray(37))
 						},
-						List(1024) { VarInt(1) },
+						List(1024) { 1.toVarInt() },
 						ByteArray(0),
 						listOf()
 					)
 				)
-		send(PositionView(Location3D(0, 100, 0).toPosition3D(), View(Angle(0), Angle(0))))
+
+		send(PositionView(Position3D(0, 100, 0), View(Angle(0), Angle(0))))
+
+		send(
+			net.nee.packets.server.playing.spawn.Object(
+				eid = 1,
+				UUID.randomUUID(),
+				1.toVarInt(),
+				Position3D(0, 100, 2),
+				View(Angle(0), Angle(0)),
+				data = 1,
+				Vector3D(0.0, 0.0, 0.0)
+			)
+		)
+
+		send(
+			EntityEquipment(
+				eid = 1, listOf(
+					EntityEquipment.Entry(
+						EntityEquipment.Slot.HELMET,
+						EntityEquipment.Entry.Item.Filled(428.toVarInt(), 1)
+					)
+				)
+			)
+		)
 	}
 
 	companion object {

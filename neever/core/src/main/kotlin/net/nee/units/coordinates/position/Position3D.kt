@@ -1,6 +1,5 @@
 package net.nee.units.coordinates.position
 
-import net.nee.units.coordinates.vector.Vector2D
 import net.nee.units.coordinates.vector.Vector3D
 
 /**
@@ -13,6 +12,8 @@ open class Position3D(
 	val y: Double,
 	val z: Double
 ) : Position<Position3D>() {
+	constructor(x: Int, y: Int, z: Int) : this(x.toDouble(), y.toDouble(), z.toDouble())
+
 	fun toPosition2D() = Position2D(x, z)
 
 	/**

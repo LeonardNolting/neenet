@@ -3,7 +3,7 @@ package net.nee.units
 import kotlin.experimental.or
 
 @JvmInline
-value class VarInt(private val value: Int) {
+value class VarInt internal constructor(private val value: Int) {
 	fun toInt() = value
 	fun toByteArray(): ByteArray {
 		val bytes = mutableListOf<Byte>()
