@@ -6,6 +6,7 @@ import net.nee.packets.client.authenticating.Start
 import net.nee.packets.client.authenticating.encryption.Response
 import net.nee.packets.client.playing.KeepAlive
 import net.nee.packets.client.playing.PositionViewConfirm
+import net.nee.packets.client.playing.Rotation
 import net.nee.packets.client.playing.Settings
 
 /**
@@ -30,6 +31,7 @@ class Play : Type<Play.States>() {
 			0x05 to Settings::class,
 			0x10 to KeepAlive::class,
 			0x00 to PositionViewConfirm::class,
+			0x14 to Rotation::class
 		)
 	}
 }

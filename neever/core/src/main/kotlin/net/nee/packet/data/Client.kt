@@ -1,34 +1,20 @@
 package net.nee.packet.data
 
+import io.ktor.utils.io.core.*
 import net.nee.connection.Connection
 import net.nee.connection.readString
 import net.nee.connection.readVarInt
 import net.nee.entity.GameMode
 import net.nee.events.packet.Receive
-import io.ktor.utils.io.core.ByteReadPacket
-import io.ktor.utils.io.core.readDouble
-import io.ktor.utils.io.core.readInt
-import io.ktor.utils.io.core.readLong
-import io.ktor.utils.io.core.readShort
-import io.ktor.utils.io.core.readUByte
-import io.ktor.utils.io.core.readUShort
 import net.nee.packet.Packet
 import net.nee.packets.client.playing.Settings
+import net.nee.units.Angle
 import net.nee.units.VarInt
+import net.nee.units.View
 import net.nee.units.ViewDistance
 import net.nee.units.coordinates.position.Position3D
-import kotlin.reflect.KClass
-import kotlin.reflect.KParameter
-import kotlin.reflect.KType
-import kotlin.reflect.KTypeProjection
-import kotlin.reflect.KVariance
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.extensionReceiverParameter
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.typeOf
+import kotlin.reflect.*
+import kotlin.reflect.full.*
 
 abstract class Client<D : Client<D>> : Data<D, Receive<D>>() {
 	open class Handler<D : Client<D>>(private val kClass: KClass<D>) {
@@ -97,6 +83,15 @@ abstract class Client<D : Client<D>> : Data<D, Receive<D>>() {
 					GameMode.values().find { it.id == id }!!
 				},
 				Reader<Position3D> { Position3D(readDouble(), readDouble(), readDouble()) },
+				ReaderFull<Angle> { _, unit ->
+					when (unit) {
+						typeOf<Float>() -> Angle(readFloat())
+						else -> Angle(readByte())
+					}
+				},
+				ReaderFull<View> { _, unit ->
+					View(read<Angle>(unit), read<Angle>(unit))
+				},
 				ReaderFull<ViewDistance> { _, unit ->
 					ViewDistance(
 						if (unit == typeOf<VarInt>()) readVarInt().toInt()

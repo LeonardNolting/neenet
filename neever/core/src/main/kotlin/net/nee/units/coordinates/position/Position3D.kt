@@ -7,7 +7,7 @@ import net.nee.units.coordinates.vector.Vector3D
  * @param y Height
  * @param z Positive: south, negative: north
  */
-open class Position3D(
+data class Position3D(
 	val x: Double,
 	val y: Double,
 	val z: Double
@@ -29,4 +29,14 @@ open class Position3D(
 
 	override fun to(other: Position3D) =
 		Vector3D(other.x - x, other.y - y, other.z - z)
+
+	operator fun plus(other: Vector3D) =
+		Position3D(x + other.x, y + other.y, z + other.z)
+
+	operator fun minus(other: Position3D) =
+		Vector3D(x - other.x, y - other.y, z - other.z)
+
+	fun distanceTo(other: Position3D): Double {
+		return (this to other).length
+	}
 }

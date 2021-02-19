@@ -16,7 +16,7 @@ sealed class Vector<V : Vector<V>> : Coordinates<Double> {
 
 	abstract infix fun dot(other: V): Double
 	abstract infix fun cross(other: V): V
-	abstract infix fun distanceTo(other: V): V
+	abstract infix fun distanceTo(other: V): Double
 
 	abstract val lengthSquared: Double
 	val length by lazy {

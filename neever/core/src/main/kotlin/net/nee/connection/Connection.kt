@@ -27,6 +27,7 @@ class Connection(private val socket: Socket) : Socket by socket {
 	val logger = KotlinLogging.logger(Server.name + socket.remoteAddress.toString())
 
 	var type: Type<out States> = Uncertain
+	var hasJoined = false
 
 	val input = openReadChannel()
 	val output = openWriteChannel(autoFlush = false)

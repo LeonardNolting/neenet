@@ -20,6 +20,7 @@ import net.nee.units.coordinates.vector.Vector3D
 import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTWriter
+import java.lang.IllegalStateException
 import java.util.*
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
@@ -168,6 +169,11 @@ abstract class Server<D : Server<D>>(
 						write(it.y.toInt().toShort())
 						write(it.z.toInt().toShort())
 					}
+					typeOf<Float>() -> {
+						write(it.x.toFloat())
+						write(it.y.toFloat())
+						write(it.z.toFloat())
+					}
 					else            -> {
 						write(it.x)
 						write(it.y)
@@ -230,15 +236,21 @@ abstract class Server<D : Server<D>>(
 		connection.run {
 			run(this, packet)
 
-			output.writePacket(encrypt(buildPacket {
-				writeVarInt(length)
-				writeFully(idVarInt)
-				writePacket(content)
-			}))
+			try {
+				output.writePacket(encrypt(buildPacket {
+					writeVarInt(length)
+					writeFully(idVarInt)
+					writePacket(content)
+				}))
 
-			output.flush()
+				output.flush()
 
-			afterSend(this, packet)
+			} catch (e: Throwable) {
+				println("The attempt to send $packet resulted in the following exception:")
+				e.printStackTrace()
+			} finally {
+				afterSend(this, packet)
+			}
 		}
 	}
 }

@@ -5,7 +5,7 @@ import net.nee.units.coordinates.position.Position2D
 import net.nee.units.coordinates.position.Position3D
 import net.nee.units.coordinates.location.Location3D
 
-class ChunkLocation3D(
+data class ChunkLocation3D(
 	val x: Int,
 	val y: Int,
 	val z: Int

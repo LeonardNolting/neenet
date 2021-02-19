@@ -2,7 +2,7 @@ package net.nee.units.coordinates.location
 
 import net.nee.units.coordinates.position.Position2D
 
-open class Location2D(
+data class Location2D(
 	val x: Int,
 	val z: Int
 ) : Location<Location2D>() {

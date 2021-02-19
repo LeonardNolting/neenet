@@ -2,7 +2,7 @@ package net.nee.units.coordinates.location
 
 import net.nee.units.coordinates.position.Position3D
 
-open class Location3D(
+data class Location3D(
 	val x: Int,
 	val y: Int,
 	val z: Int

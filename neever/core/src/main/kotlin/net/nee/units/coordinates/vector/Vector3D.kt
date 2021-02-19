@@ -13,7 +13,7 @@ data class Vector3D(
 		Vector3D(x + other.x, y + other.y, z + other.z)
 
 	override fun minus(other: Vector3D) =
-		Vector3D(x - other.x, y - other.y, z - other.y)
+		Vector3D(x - other.x, y - other.y, z - other.z)
 
 	override fun times(other: Double) =
 		Vector3D(x * other, y * other, z * other)
@@ -36,9 +36,17 @@ data class Vector3D(
 		x * other.y - y * other.x
 	)
 
-	override fun distanceTo(other: Vector3D): Vector3D {
-		TODO("Not yet implemented")
+	override fun distanceTo(other: Vector3D): Double {
+		return (this - other).length
 	}
 
 	override val lengthSquared = x.pow(2) + y.pow(2) + z.pow(2)
+
+	val normalized by lazy { if (length == 0.0) ZERO else this / length }
+
+	fun withLength(length: Double) = normalized * length
+
+	companion object {
+		val ZERO = Vector3D(0.0, 0.0, 0.0)
+	}
 }

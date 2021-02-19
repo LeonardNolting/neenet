@@ -3,7 +3,7 @@ package net.nee.units.coordinates.position
 import net.nee.units.coordinates.vector.Vector
 import net.nee.units.coordinates.vector.Vector2D
 
-open class Position2D(
+data class Position2D(
 	val x: Double,
 	val z: Double
 ) : Position<Position2D>() {

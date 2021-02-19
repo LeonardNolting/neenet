@@ -1,12 +1,12 @@
 package net.nee
 
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.features.json.GsonSerializer
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.network.selector.ActorSelectorManager
-import io.ktor.network.sockets.aSocket
-import io.ktor.util.KtorExperimentalAPI
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.features.json.*
+import io.ktor.network.selector.*
+import io.ktor.network.sockets.*
+import io.ktor.util.*
+import io.ktor.util.date.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -20,11 +20,20 @@ import net.nee.event.Handler
 import net.nee.events.packet.Packet
 import net.nee.packet.data.Client
 import net.nee.packet.data.Server
+import net.nee.physics.Matrix3D
+import net.nee.physics.PhysicsEntity
+import net.nee.physics.PhysicsWorld
+import net.nee.units.Angle
+import net.nee.units.VarInt
+import net.nee.units.View
+import net.nee.units.coordinates.position.Position3D
+import net.nee.units.coordinates.vector.Vector3D
 import org.reflections8.Reflections
 import java.net.InetSocketAddress
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.util.*
+import java.util.concurrent.ThreadLocalRandom
 import kotlin.concurrent.schedule
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
@@ -54,6 +63,7 @@ object Server {
 
 	val connections = mutableListOf<Connection>()
 	var keepAlive: TimerTask? = null
+	var physics: TimerTask? = null
 
 	val events = Handler()
 
@@ -114,6 +124,34 @@ object Server {
 				}
 			}
 		}
+
+//		val random = ThreadLocalRandom.current()
+//		repeat(10) { eid ->
+//			val pos = Position3D(
+//				0.0 + random.nextDouble(-10.0, 10.0),
+////				0.0,
+//				100.0 + random.nextDouble(-10.0, 10.0),
+//				0.0 + random.nextDouble(-10.0, 10.0)
+////				0.0
+//			)
+//			val vel = Vector3D(
+//				random.nextDouble(-0.1, 0.1),
+//				random.nextDouble(-0.1, 0.1),
+//				random.nextDouble(-0.1, 0.1),
+////				0.0, 0.0, 0.0
+//			)
+//			PhysicsWorld.objects.add(PhysicsEntity(eid + 1, pos, vel, Matrix3D.IDENTITY, Vector3D.ZERO, 1.0))
+//		}
+//		PhysicsWorld.objects.add(PhysicsEntity(1000, Position3D(0.0, 100.0, 0.0), Vector3D.ZERO,Matrix3D.IDENTITY, Vector3D.ZERO,  1000.0))
+//		var lastTime = getTimeMillis()
+//		physics = timer.schedule(delay = 0L, period = 50L) {
+//			val now = getTimeMillis()
+//			val dt = (now - lastTime) / 1000.0
+//			lastTime = now
+//			runBlocking(this@launch.coroutineContext) {
+//				PhysicsWorld.tick(dt * 0.001)
+//			}
+//		}
 
 		while (running) {
 			val socket = server.accept()

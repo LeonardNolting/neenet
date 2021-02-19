@@ -33,7 +33,7 @@ data class Vector2D(
 		TODO("Not yet implemented")
 	}
 
-	override fun distanceTo(other: Vector2D): Vector2D {
+	override fun distanceTo(other: Vector2D): Double {
 		TODO("Not yet implemented")
 	}
 

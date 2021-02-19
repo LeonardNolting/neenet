@@ -1,6 +1,7 @@
 package net.nee.packets.server.playing
 
 import info.kunalsheth.units.generated.Kilogram
+import kotlinx.coroutines.runBlocking
 import net.nee.connection.Connection
 import net.nee.entities.ball.Football
 import net.nee.entity.EntityId
@@ -8,14 +9,12 @@ import net.nee.entity.GameMode
 import net.nee.packet.Packet
 import net.nee.packet.data.Server
 import net.nee.packet.data.Unit
-import net.nee.units.Angle
-import net.nee.units.VarInt
-import net.nee.units.View
-import net.nee.units.ViewDistance
+import net.nee.physics.PhysicsEntity
+import net.nee.physics.PhysicsWorld
+import net.nee.units.*
 import net.nee.units.coordinates.location.chunk.ChunkLocation2D
 import net.nee.units.coordinates.position.Position3D
 import net.nee.units.coordinates.vector.Vector3D
-import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTList
 import org.jglrxavpok.hephaistos.nbt.NBTTypes
@@ -50,8 +49,8 @@ data class Join(
 			)
 		)
 
-		for (x in -3..3)
-			for (z in -3..3)
+		for (x in -9..9)
+			for (z in -9..9)
 				send(
 					Chunk.New(
 						ChunkLocation2D(x, z),
@@ -67,39 +66,118 @@ data class Join(
 
 		send(PositionView(Position3D(0, 100, 0), View(Angle(0), Angle(0))))
 
-		repeat(1) {
-			Football(
-				eid = 1 + it,
-				UUID.randomUUID(),
-				0.5.Kilogram,
-				Position3D(0, 100, 2),
-				View(Angle(0), Angle(0)),
-				Vector3D(0.0, 0.0, 0.0),
-				itemId = 428
-			).spawn(connection)
-			/*send(
-				net.nee.packets.server.playing.spawn.Object(
-					eid = 1 + it,
-					UUID.randomUUID(),
-					1.toVarInt(),
-					Position3D(0, 100, 2),
-					View(Angle(0), Angle(0)),
-					data = 1,
-					Vector3D(0.0, 0.0, 0.0)
-				)
+		PhysicsWorld.objects.filterIsInstance<PhysicsEntity>().forEach {
+			connection.send(
+				net.nee.packets.server.playing.spawn.Object(it.eid, UUID.randomUUID(), VarInt(71), it.pos, View(Angle(0.0), Angle(0.0)), data = 1, it.vel)
 			)
-
-			send(
-				EntityEquipment(
-					eid = 1 + it, listOf(
-						EntityEquipment.Entry(
-							EntityEquipment.Slot.HELMET,
-							EntityEquipment.Entry.Item.Filled(428.toVarInt(), 1)
-						)
-					)
-				)
-			)*/
 		}
+
+		connection.hasJoined = true
+
+//		repeat(1) {
+//			Football(
+//				eid = 1 + it,
+//				UUID.randomUUID(),
+//				0.5.Kilogram,
+//				Position3D(0, 100, 2),
+//				View(Angle(0), Angle(0)),
+//				Vector3D(0.0, 0.0, 0.0),
+//				itemId = 428
+//			).spawn(connection)
+//		}
+//		repeat(1) {
+//			var pos = Position3D(0.0, 100.0, 0.0)
+//			var vel = Vector3D(0.0, 1.0, 0.0)
+//			val mass = 1.0
+//
+////			var kin = 1.0
+////			var dir = -1.0
+////			var vel: Double
+//			val position3D = Position3D(5.0, 100.0, 0.0)
+//			Football(
+//				eid = 2 + it,
+//				UUID.randomUUID(),
+//				0.5.Kilogram,
+//				position3D,
+//				View(Angle(0), Angle(0)),
+//				Vector3D(0.0, 0.0, 0.0),
+//				itemId = 428
+//			).spawn(connection)
+//			Timer("physics", true)
+//				.schedule(
+//					object : TimerTask() {
+//						override fun run() {
+////							if (y < 90) {
+////								vel *= -1
+////								vel = vel.sign * (abs(vel) - 0.2)
+////								if (abs(vel) < 0.2) vel = 0.0
+////							} else {
+////								vel -= 0.1
+////							}
+////							pos += vel
+////							kin = max(0.0, kin - 0.01)
+////							if (y < 90)
+////								dir *= -1
+////							vel = kin * dir
+////							y += vel
+////							println(kin)
+////							println(vel)
+////							println(y)
+//							val forces =
+//								mutableListOf<Vector3D>(
+//									// gravity
+////									Vector3D(0.0, -9.81 / 20, 0.0),
+//									// friction
+////									if (vel.length > 0) -(vel / vel.length) * 0.01 else Vector3D(0.0, 0.0, 0.0),
+//								)
+//							forces.add((position3D - pos).let { it.withLength(10.0 / it.lengthSquared) })
+//							vel += forces.reduce { acc, cur -> acc + cur } / mass
+//							println(vel)
+//							if (vel.lengthSquared > 64) {
+//								println("TOO FAST")
+//								vel = (vel / vel.length) * 8
+//							}
+//							pos += vel
+//							runBlocking {
+//								send(
+//									EntityPosition(
+//										1 + it,
+//										(vel.x * 4096).toInt().toShort(),
+//										(vel.y * 4096).toInt().toShort(),
+//										(vel.z * 4096).toInt().toShort(),
+//										false
+//									)
+//								)
+//							}
+//						}
+//					},
+//					0L,
+//					50L
+//				)
+//			}
+//			/*send(
+//				net.nee.packets.server.playing.spawn.Object(
+//					eid = 1 + it,
+//					UUID.randomUUID(),
+//					1.toVarInt(),
+//					Position3D(0, 100, 2),
+//					View(Angle(0), Angle(0)),
+//					data = 1,
+//					Vector3D(0.0, 0.0, 0.0)
+//				)
+//			)
+//
+//			send(
+//				EntityEquipment(
+//					eid = 1 + it, listOf(
+//						EntityEquipment.Entry(
+//							EntityEquipment.Slot.HELMET,
+//							EntityEquipment.Entry.Item.Filled(428.toVarInt(), 1)
+//						)
+//					)
+//				)
+//			)*/
+////		}
 	}
 
 	companion object {
