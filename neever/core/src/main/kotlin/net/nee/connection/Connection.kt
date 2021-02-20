@@ -3,6 +3,7 @@ package net.nee.connection
 import net.nee.Server
 import net.nee.connection.types.Type
 import io.ktor.network.sockets.Socket
+import io.ktor.network.sockets.isClosed
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.core.ByteReadPacket
@@ -62,7 +63,8 @@ class Connection(private val socket: Socket) : Socket by socket {
 
 	override fun close() {
 		Server.connections -= this
-		socket.close()
+		if (!socket.isClosed)
+			socket.close()
 	}
 
 	private suspend fun handle(id: PacketId, packet: ByteReadPacket) {
