@@ -2,8 +2,27 @@ package net.nee
 
 import net.nee.event.Event
 import net.nee.events.packet.Packet
+import kotlin.reflect.KClass
+import kotlin.reflect.typeOf
+
+//abstract class TestData<O>
+//class Click : TestData<Int>
+//class Test<D : TestData<O>, O>
+//
+//class Result<O>
+//
+//fun <D : TestData<out O>, O> test(d: KClass<D>, o: KClass<Result<out O>>) {}
+//inline fun <reified D : TestData<*>> test2() {
+//	test<TestData<Int>, Int>()
+//	test(D::class, typeOf<D>().arguments.single().type!!.classifier as KClass<*>)
+//}
+//
+//fun foo() {
+//	test2<Click>()
+//}
 
 fun main() {
+
 	neever {
 		/*val beforeHandshake = events.before { event: Receive<Handshake> ->
 			println("BEFORE handshake")

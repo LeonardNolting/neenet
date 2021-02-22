@@ -7,6 +7,7 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.*
 import io.ktor.util.date.*
+import io.ktor.utils.io.makeShared
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -19,13 +20,11 @@ import net.nee.event.Event
 import net.nee.event.Handler
 import net.nee.events.packet.Packet
 import net.nee.packet.data.Client
-import net.nee.packet.data.Server
-import net.nee.physics.Matrix3D
-import net.nee.physics.PhysicsEntity
+import net.nee.particles.ParticleType
+import net.nee.particles.Particles
+import net.nee.physics.ParticleCube
 import net.nee.physics.PhysicsWorld
-import net.nee.units.Angle
-import net.nee.units.VarInt
-import net.nee.units.View
+import net.nee.physics.Quaternion
 import net.nee.units.coordinates.position.Position3D
 import net.nee.units.coordinates.vector.Vector3D
 import org.reflections8.Reflections
@@ -33,12 +32,9 @@ import java.net.InetSocketAddress
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.util.*
-import java.util.concurrent.ThreadLocalRandom
 import kotlin.concurrent.schedule
 import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.isSubtypeOf
-import kotlin.reflect.typeOf
 
 @OptIn(KtorExperimentalAPI::class)
 object Server {
@@ -61,7 +57,7 @@ object Server {
 
 	lateinit var keypair: KeyPair
 
-	val connections = mutableListOf<Connection>()
+	val connections = Collections.synchronizedList<Connection>(mutableListOf())
 	var keepAlive: TimerTask? = null
 	var physics: TimerTask? = null
 
@@ -71,7 +67,7 @@ object Server {
 		if (init) return
 
 		logger = KotlinLogging.logger(name)
-		net.nee.Server.configuration = configuration
+		Server.configuration = configuration
 
 		Handler.register("net.nee.event")
 		Handler.register("net.nee.events")
@@ -90,15 +86,15 @@ object Server {
 		}
 
 		events.after { event: Event<Packet<*>>, _ ->
-			event.data.connection.logger.info {
-				val isServer = event.data.packet.d.isSubtypeOf(typeOf<Server<*>>())
-				"${if (isServer) "OUT" else "IN "} ${
-					event.data.packet.d.toString()
-						.removePrefix("net.nee.packets.")
-						.removePrefix("server.")
-						.removePrefix("client.")
-				}: ${event.data.packet}".cutOverflow(100u)
-			}
+//			event.data.connection.logger.info {
+//				val isServer = event.data.packet.d.isSubtypeOf(typeOf<Server<*>>())
+//				"${if (isServer) "OUT" else "IN "} ${
+//					event.data.packet.d.toString()
+//						.removePrefix("net.nee.packets.")
+//						.removePrefix("server.")
+//						.removePrefix("client.")
+//				}: ${event.data.packet}".cutOverflow(100u)
+//			}
 		}
 
 		init = true
@@ -143,15 +139,59 @@ object Server {
 //			PhysicsWorld.objects.add(PhysicsEntity(eid + 1, pos, vel, Matrix3D.IDENTITY, Vector3D.ZERO, 1.0))
 //		}
 //		PhysicsWorld.objects.add(PhysicsEntity(1000, Position3D(0.0, 100.0, 0.0), Vector3D.ZERO,Matrix3D.IDENTITY, Vector3D.ZERO,  1000.0))
-//		var lastTime = getTimeMillis()
-//		physics = timer.schedule(delay = 0L, period = 50L) {
-//			val now = getTimeMillis()
-//			val dt = (now - lastTime) / 1000.0
-//			lastTime = now
-//			runBlocking(this@launch.coroutineContext) {
-//				PhysicsWorld.tick(dt * 0.001)
-//			}
-//		}
+		val cube =
+			ParticleCube(
+				5.0,
+				Particles(
+					ParticleType.Dust(1F, 1F, 0F, 0.5F),
+					true,
+					Vector3D.ZERO,
+					0F,
+					1
+				),
+//				Particles(
+//					ParticleType.Normal(26),
+//					true,
+//					Vector3D(0.05, 0.05, 0.05),
+//					0F,
+//					5
+//				),
+				Position3D(0.0, 100.0, 0.0),
+				Vector3D(0.0, 0.0, 0.0),
+//				Matrix3D(
+//					Vector3D(0.5000000, -0.5000000, 0.7071068),
+//					Vector3D(0.8535534, 0.1464466, -0.5000000),
+//					Vector3D(0.1464466, 0.8535534, 0.5000000),
+//				),
+//				Quaternion(0.7325378, Vector3D(0.4619398, 0.1913417, 0.4619398)),
+				Quaternion(0.0, Vector3D(0.0, 1.0, 0.0)),
+//				Quaternion(0.7071068, Vector3D(0.0, 0.0, 0.7071068)),
+//				Quaternion(0.7071068, Vector3D(0.0, 0.0, 0.7071068)).asMatrix.inverse.transform(Vector3D(0.0, 0.1, 0.0)),
+				Vector3D(0.0, 0.01, 0.0),
+				10.0
+			)
+		PhysicsWorld.objects.add(cube)
+		timer.schedule(10000L, 10000L) {
+			runBlocking(this@launch.coroutineContext) {
+				cube.applyForce(/*cube.rotation.transform(*/Vector3D(0.0, 0.01, 0.0), Vector3D(0.0, 0.0, 2.5))
+				println("DONE: ${cube.angularVelocity}")
+			}
+		}
+		timer.schedule(15000L, 10000L) {
+			runBlocking(this@launch.coroutineContext) {
+				cube.applyForce(/*cube.rotation.transform(*/Vector3D(0.0, -0.01, 0.0), Vector3D(0.0, 0.0, 2.5))
+				println("BACK: ${cube.angularVelocity}")
+			}
+		}
+		var lastTime = getTimeMillis()
+		physics = timer.schedule(delay = 0L, period = 50L) {
+			val now = getTimeMillis()
+			val dt = (now - lastTime) / 1000.0
+			lastTime = now
+			runBlocking(this@launch.coroutineContext) {
+				PhysicsWorld.tick(dt * 0.001)
+			}
+		}
 
 		while (running) {
 			val socket = server.accept()

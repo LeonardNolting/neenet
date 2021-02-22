@@ -1,6 +1,8 @@
 package net.nee.packet.data
 
+import io.ktor.network.sockets.isClosed
 import io.ktor.utils.io.core.*
+import io.ktor.utils.io.errors.IOException
 import io.ktor.utils.io.streams.outputStream
 import net.nee.connection.Connection
 import net.nee.connection.writeString
@@ -20,8 +22,8 @@ import net.nee.units.coordinates.vector.Vector3D
 import net.nee.units.toVarInt
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import org.jglrxavpok.hephaistos.nbt.NBTWriter
-import java.lang.IllegalStateException
 import java.util.*
+import kotlin.IllegalStateException
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
@@ -160,6 +162,9 @@ abstract class Server<D : Server<D>>(
 			Writer<Float> {
 				writeFloat(it)
 			},
+			Writer<Double> {
+				writeDouble(it)
+			},
 			Writer<Painting.Motive> { write(VarInt(it.id)) },
 			Writer<Direction> { writeByte(it.id.toByte()) },
 			WriterFull<Vector3D> { it, _, unit ->
@@ -229,6 +234,7 @@ abstract class Server<D : Server<D>>(
 		connection: Connection,
 		packet: Packet<D>,
 	) {
+
 		val content = buildPacket { prepare() }
 		val idVarInt = id.toVarInt().toByteArray()
 		val length = content.remaining.toInt() + idVarInt.size
@@ -236,6 +242,10 @@ abstract class Server<D : Server<D>>(
 		connection.run {
 			run(this, packet)
 
+			if (connection.isClosed || connection.output.isClosedForWrite) {
+				connection.logger.error { "Can't send packet, channel was closed" }
+				return
+			}
 			try {
 				output.writePacket(encrypt(buildPacket {
 					writeVarInt(length)
@@ -244,8 +254,10 @@ abstract class Server<D : Server<D>>(
 				}))
 
 				output.flush()
-
-			} catch (e: Throwable) {
+			} catch (e: IllegalStateException) {
+				println("The attempt to send $packet resulted in the following exception:")
+				e.printStackTrace()
+			} catch (e: IOException) {
 				println("The attempt to send $packet resulted in the following exception:")
 				e.printStackTrace()
 			} finally {

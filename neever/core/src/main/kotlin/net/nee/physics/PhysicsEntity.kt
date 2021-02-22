@@ -9,7 +9,7 @@ import net.nee.units.View
 import net.nee.units.coordinates.position.Position3D
 import net.nee.units.coordinates.vector.Vector3D
 
-class PhysicsEntity(val eid: EntityId, pos: Position3D, vel: Vector3D, rotation: Matrix3D, angularVelocity: Vector3D, mass: Double) : PhysicsBody(pos, vel, rotation,
+class PhysicsEntity(val eid: EntityId, pos: Position3D, vel: Vector3D, rotation: Quaternion, angularVelocity: Vector3D, mass: Double) : PhysicsBody(pos, vel, rotation,
 	angularVelocity, mass) {
 	override suspend fun tick(dt: Double) {
 		val packet =
