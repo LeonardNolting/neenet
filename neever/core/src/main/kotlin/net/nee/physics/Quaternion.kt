@@ -14,7 +14,13 @@ data class Quaternion(val s: Double, val v: Vector3D) {
 	operator fun plus(other: Quaternion) =
 		Quaternion(s + other.s, v + other.v)
 
-	val length by lazy { sqrt(s * s + v.lengthSquared) }
+	operator fun div(scalar: Double) = this * (1 / scalar)
+
+	val conjugate by lazy { Quaternion(s, -v) }
+	val inverse by lazy { conjugate / lengthSquared }
+
+	val length by lazy { sqrt(lengthSquared) }
+	val lengthSquared by lazy { s * s + v.lengthSquared }
 
 	//	val normalized by lazy {
 //		if (length == 0.0) Quaternion(0.0, Vector3D(0.0, 1.0, 0.0)) else Quaternion(s / length, v / length)

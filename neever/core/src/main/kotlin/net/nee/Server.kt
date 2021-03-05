@@ -7,7 +7,6 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.*
 import io.ktor.util.date.*
-import io.ktor.utils.io.makeShared
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -20,11 +19,18 @@ import net.nee.event.Event
 import net.nee.event.Handler
 import net.nee.events.packet.Packet
 import net.nee.packet.data.Client
+import net.nee.packets.server.playing.EntityPosition
+import net.nee.packets.server.playing.EntityTeleport
+import net.nee.packets.server.playing.EntityVelocity
+import net.nee.packets.server.playing.PositionView
+import net.nee.packets.server.playing.spawn.Object
 import net.nee.particles.ParticleType
 import net.nee.particles.Particles
 import net.nee.physics.ParticleCube
 import net.nee.physics.PhysicsWorld
 import net.nee.physics.Quaternion
+import net.nee.units.VarInt
+import net.nee.units.View
 import net.nee.units.coordinates.position.Position3D
 import net.nee.units.coordinates.vector.Vector3D
 import org.reflections8.Reflections
@@ -167,31 +173,73 @@ object Server {
 				Quaternion(0.0, Vector3D(0.0, 1.0, 0.0)),
 //				Quaternion(0.7071068, Vector3D(0.0, 0.0, 0.7071068)),
 //				Quaternion(0.7071068, Vector3D(0.0, 0.0, 0.7071068)).asMatrix.inverse.transform(Vector3D(0.0, 0.1, 0.0)),
-				Vector3D(0.0, 0.01, 0.0),
+				Vector3D(0.0, 0.0, 0.0),
 				10.0
 			)
 		PhysicsWorld.objects.add(cube)
-		timer.schedule(10000L, 10000L) {
-			runBlocking(this@launch.coroutineContext) {
-				cube.applyForce(/*cube.rotation.transform(*/Vector3D(0.0, 0.01, 0.0), Vector3D(0.0, 0.0, 2.5))
-				println("DONE: ${cube.angularVelocity}")
-			}
-		}
-		timer.schedule(15000L, 10000L) {
-			runBlocking(this@launch.coroutineContext) {
-				cube.applyForce(/*cube.rotation.transform(*/Vector3D(0.0, -0.01, 0.0), Vector3D(0.0, 0.0, 2.5))
-				println("BACK: ${cube.angularVelocity}")
-			}
-		}
+//		timer.schedule(5500L, 1000L) {
+//			runBlocking(this@launch.coroutineContext) {
+//				cube.applyForce(/*cube.rotation.transform(*/Vector3D(0.0, -0.01, 0.0), Vector3D(0.0, 0.0, 2.5))
+//				println("BACK: ${cube.angularVelocity}")
+//			}
+//		}
 		var lastTime = getTimeMillis()
+		var pos = Position3D(0.0, 100.0, 0.0)
+		val c = ParticleCube(
+			1.0,
+			Particles(ParticleType.Dust(1.0f, 0.8f, 0.2f, 0.4f), true, Vector3D.ZERO, 0f, 1),
+			Position3D(0.0, 100.0, 10.0),
+			Vector3D.ZERO,
+			Quaternion(0.0, Vector3D(0.0, 1.0, 0.0)),
+			Vector3D.ZERO,
+			1.0
+		)
+		connections.forEach {
+			it.send(EntityTeleport(0, pos, View.ZERO, false))
+//			it.send(Object(1000, UUID.randomUUID(), VarInt(1), Position3D(0.0, 100.0, 10.0), View.ZERO, 0, Vector3D(0.0, 0.0, 0.0)))
+		}
 		physics = timer.schedule(delay = 0L, period = 50L) {
-			val now = getTimeMillis()
-			val dt = (now - lastTime) / 1000.0
-			lastTime = now
 			runBlocking(this@launch.coroutineContext) {
-				PhysicsWorld.tick(dt * 0.001)
+				c.tick(0.0)
+				connections.forEach {
+					val dy = 0.0625
+					it.send(EntityPosition(0, 0, (dy * 4096).toShort(), 0, false))
+					pos += Vector3D(0.0, dy, 0.0)
+					it.send(EntityTeleport(0, pos, View.ZERO, false))
+//					it.send(EntityTeleport(0, pos, ))
+//					it.send(PositionView(pos, View.ZERO))
+//					it.send(EntityVelocity(0, 0, (dy / 80000).toShort(), 0))
+				}
 			}
 		}
+//		physics = timer.schedule(delay = 0L, period = 10L) {
+//			val now = getTimeMillis()
+//			val dt = (now - lastTime) / 1000.0
+//			lastTime = now
+//			runBlocking(this@launch.coroutineContext) {
+//				val position = cube.rotation.asMatrix.transform(Vector3D(2.5, 2.5, 2.5))
+//				cube.applyForce(/*Vector3D(0.0, 0.004, 0.0)*/(position to (Position3D(0.0, 110.0, 0.0) - cube.pos)).let { it.withLength((it.length - 5.0) / 1000) }, position)
+//				val position2 = cube.rotation.asMatrix.transform(Vector3D(-2.5, -2.5, -2.5))
+//				cube.applyForce(/*Vector3D(0.0, 0.004, 0.0)*/(position2 to (Position3D(0.0, 118.0, 0.0) - cube.pos)).let { it.withLength((it.length - 5.0) / 1000) }, position2)
+////				val position1 = cube.rotation.asMatrix.transform(Vector3D(-2.5, 2.5, 2.5))
+////				cube.applyForce(/*Vector3D(0.0, 0.004, 0.0)*/(position1 to Vector3D(0.0, 10.0, 0.0)).withLength(0.001), position1)
+////				cube.applyForce(/*Vector3D(0.0, 0.004, 0.0)*/(position2 to Vector3D(0.0, -10.0, 0.0)).withLength(0.001), position2)
+////				val position2 = cube.rotation.asMatrix.transform(Vector3D(-2.5, -2.5, -2.5))
+////				cube.applyForce(Vector3D(0.0, -0.004, 0.0), Vector3D.ZERO)
+//
+//				cube.angVel = cube.angVel.withLength(cube.angVel.length - 0.01)
+//				cube.vel = cube.vel.withLength(cube.vel.length - 0.001)
+//
+////				println(cube.pos)
+////				println(cube.rotation)
+//
+////				println("Angular velocity: ${cube.angularVelocity}")
+////				println("Rotation: ${cube.rotation}")
+////				println("Position: ${cube.pos}")
+//
+//				PhysicsWorld.tick(dt * 1)
+//			}
+//		}
 
 		while (running) {
 			val socket = server.accept()
